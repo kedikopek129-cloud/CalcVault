@@ -1,0 +1,605 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#f4f7fb">
+<title>CalcVault</title>
+<style>
+:root {
+  --bg: #f3f6fb;
+  --text: #20283a;
+  --muted: #8993a5;
+  --glass: rgba(255,255,255,.72);
+  --line: rgba(255,255,255,.95);
+  --shadow: 0 16px 45px rgba(57,75,110,.10);
+  --blue: #668cff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 25px 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 15% 15%, #e2ebff 0, transparent 35%),
+    radial-gradient(circle at 85% 80%, #e8e4ff 0, transparent 35%),
+    var(--bg);
+}
+button, input { font: inherit; }
+button { cursor: pointer; }
+.app {
+  width: 100%;
+  max-width: 410px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 30px;
+  background: var(--glass);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: var(--shadow);
+}
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.brand { display: flex; align-items: center; gap: 11px; }
+.logo {
+  width: 43px; height: 43px;
+  display: grid; place-items: center;
+  border-radius: 15px;
+  color: white;
+  font-size: 22px;
+  background: linear-gradient(145deg,#83a6ff,#a18aff);
+  box-shadow: 0 7px 17px #8ca5ed55;
+}
+.brand h1 { font-size: 19px; margin: 0; letter-spacing: -.6px; }
+.brand p { margin: 3px 0 0; font-size: 11px; color: var(--muted); }
+.status {
+  font-size: 10px; font-weight: 700;
+  color: #6e91d9;
+  background: #edf2ff;
+  padding: 7px 10px;
+  border-radius: 20px;
+}
+.display {
+  min-height: 112px;
+  padding: 18px 15px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  border-radius: 22px;
+  border: 1px solid white;
+  background: rgba(255,255,255,.58);
+  box-shadow: inset 0 2px 9px #8d9bb00d;
+  overflow: hidden;
+}
+#expression {
+  width: 100%;
+  text-align: right;
+  font-size: 13px;
+  color: var(--muted);
+  min-height: 20px;
+  overflow-wrap: anywhere;
+}
+#screen {
+  width: 100%;
+  text-align: right;
+  font-size: clamp(29px,8vw,39px);
+  font-weight: 600;
+  letter-spacing: -1.5px;
+  overflow-wrap: anywhere;
+}
+.keys {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 10px;
+}
+.key {
+  border: 1px solid rgba(255,255,255,.95);
+  min-height: 61px;
+  border-radius: 19px;
+  color: var(--text);
+  font-size: 19px;
+  font-weight: 600;
+  background: rgba(255,255,255,.72);
+  box-shadow: 0 5px 13px #52627c0b;
+  transition: .15s;
+}
+.key:active { transform: scale(.94); }
+.key.op { color: #6d8ff0; background: #edf2ff; }
+.key.clear { color: #e17c91; background: #fff0f3; }
+.key.equal {
+  color: white;
+  background: linear-gradient(145deg,#789cff,#9a8aff);
+  box-shadow: 0 7px 17px #8b9df04d;
+}
+.key.zero { grid-column: span 2; }
+.footer {
+  text-align: center;
+  margin-top: 20px;
+  color: #a1aabc;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+}
+.panel { display: none; }
+.panel.active { display: block; }
+.vault-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 5px 0 20px;
+}
+.vault-head h2 { font-size: 23px; margin: 0; }
+.vault-head p { color: var(--muted); font-size: 12px; margin: 5px 0 0; }
+.small-btn {
+  border: 1px solid #e6eaf1;
+  background: white;
+  color: #69758a;
+  border-radius: 12px;
+  padding: 10px 13px;
+  font-size: 12px;
+}
+.vault-list { display: grid; gap: 10px; }
+.empty {
+  padding: 30px 15px;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed #d8deeb;
+  border-radius: 20px;
+  font-size: 13px;
+}
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px;
+  border-radius: 17px;
+  border: 1px solid white;
+  background: rgba(255,255,255,.75);
+}
+.item-icon {
+  width: 42px; height: 42px;
+  display: grid; place-items: center;
+  border-radius: 14px;
+  background: #edf2ff;
+  font-size: 19px;
+}
+.item-info { flex: 1; min-width: 0; }
+.item-info strong { display: block; font-size: 13px; }
+.item-info span {
+  display: block; margin-top: 4px;
+  color: var(--muted); font-size: 10px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.item-actions { display: flex; gap: 5px; }
+.item-actions button {
+  border: 0; border-radius: 10px;
+  padding: 8px; background: #f1f4fa;
+  color: #73819b;
+}
+.item-actions .delete { color: #dc8295; }
+.add-btn {
+  width: 100%; margin-top: 14px;
+  border: 0; border-radius: 16px;
+  padding: 15px; color: white;
+  font-weight: 650;
+  background: linear-gradient(120deg,#789cff,#a08aff);
+  box-shadow: 0 8px 18px #8c9df033;
+}
+.form {
+  margin-top: 15px;
+  padding: 17px;
+  border-radius: 19px;
+  background: rgba(255,255,255,.8);
+  border: 1px solid white;
+  display: none;
+}
+.form.show { display: block; }
+.form h3 { margin: 0 0 13px; font-size: 15px; }
+.field {
+  width: 100%; margin-bottom: 10px;
+  padding: 13px;
+  border: 1px solid #e7ebf2;
+  outline: none; border-radius: 12px;
+  background: #f9faff; color: var(--text);
+  font-size: 13px;
+}
+.field:focus { border-color: #9aafff; }
+.form-actions { display: flex; gap: 8px; }
+.form-actions button { flex: 1; }
+.secondary {
+  border: 1px solid #e7ebf2;
+  background: white; color: #778197;
+  padding: 12px; border-radius: 12px;
+}
+.modal {
+  position: fixed; inset: 0; z-index: 5;
+  display: none; align-items: center; justify-content: center;
+  padding: 20px;
+  background: #26334b55;
+  backdrop-filter: blur(8px);
+}
+.modal.show { display: flex; }
+.modal-card {
+  width: 100%; max-width: 350px;
+  padding: 25px; border-radius: 25px;
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 20px 60px #26334b33;
+}
+.modal-card h2 { margin: 0 0 8px; font-size: 21px; }
+.modal-card p { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.modal-card button { width: 100%; margin-top: 8px; }
+.error { color: #dc7188 !important; min-height: 18px; }
+@media(max-width:360px) {
+  .app { padding: 16px; }
+  .key { min-height: 55px; }
+}
+</style>
+</head>
+<body>
+
+<main class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">⌗</div>
+      <div>
+        <h1>CalcVault</h1>
+        <p>Private space. Your control.</p>
+      </div>
+    </div>
+    <span class="status" id="status">LOCKED</span>
+  </header>
+
+  <section id="calculator" class="panel active">
+    <div class="display">
+      <div id="expression"></div>
+      <div id="screen">0</div>
+    </div>
+    <div class="keys">
+      <button class="key clear" data-action="clear">AC</button>
+      <button class="key op" data-action="delete">⌫</button>
+      <button class="key op" data-value="%">%</button>
+      <button class="key op" data-value="/">÷</button>
+
+      <button class="key" data-value="7">7</button>
+      <button class="key" data-value="8">8</button>
+      <button class="key" data-value="9">9</button>
+      <button class="key op" data-value="*">×</button>
+
+      <button class="key" data-value="4">4</button>
+      <button class="key" data-value="5">5</button>
+      <button class="key" data-value="6">6</button>
+      <button class="key op" data-value="-">−</button>
+
+      <button class="key" data-value="1">1</button>
+      <button class="key" data-value="2">2</button>
+      <button class="key" data-value="3">3</button>
+      <button class="key op" data-value="+">+</button>
+
+      <button class="key zero" data-value="0">0</button>
+      <button class="key" data-value=".">.</button>
+      <button class="key equal" data-action="equals">=</button>
+    </div>
+    <div class="footer">CALCULATOR · PRIVATE MODE</div>
+  </section>
+
+  <section id="vault" class="panel">
+    <div class="vault-head">
+      <div>
+        <h2>My Vault</h2>
+        <p>Your private shortcuts</p>
+      </div>
+      <button class="small-btn" id="lockBtn">↗ Lock</button>
+    </div>
+    <div class="vault-list" id="vaultList"></div>
+    <button class="add-btn" id="showForm">＋ Add New Shortcut</button>
+
+    <div class="form" id="addForm">
+      <h3>New Shortcut</h3>
+      <input class="field" id="itemName" placeholder="Name">
+      <input class="field" id="itemUrl" placeholder="https://example.com" inputmode="url">
+      <div class="form-actions">
+        <button class="secondary" id="cancelAdd">Cancel</button>
+        <button class="add-btn" style="margin:0" id="saveAdd">Save</button>
+      </div>
+      <p class="error" id="formError"></p>
+    </div>
+    <div class="footer">ENCRYPTED LOCAL STORAGE</div>
+  </section>
+</main>
+
+<div class="modal" id="setupModal">
+  <div class="modal-card">
+    <h2>Create your PIN</h2>
+    <p>Choose a 4–8 digit PIN. You will use it to unlock your vault from the calculator.</p>
+    <input class="field" id="newPin" type="password" inputmode="numeric" maxlength="8" placeholder="Create PIN">
+    <input class="field" id="confirmPin" type="password" inputmode="numeric" maxlength="8" placeholder="Confirm PIN">
+    <p class="error" id="setupError"></p>
+    <button class="add-btn" id="createPin">Create Secure Vault</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const STORE = "calcvault_encrypted_v1";
+let expression = "";
+let encryptedVault = null;
+let unlockedItems = null;
+
+function setScreen(value) {
+  $("screen").textContent = value || "0";
+}
+function showPanel(name) {
+  $("calculator").classList.toggle("active", name === "calculator");
+  $("vault").classList.toggle("active", name === "vault");
+  $("status").textContent = name === "vault" ? "UNLOCKED" : "LOCKED";
+}
+function readStore() {
+  try { return JSON.parse(localStorage.getItem(STORE)); }
+  catch { return null; }
+}
+function bytesToBase64(bytes) {
+  let binary = "";
+  bytes.forEach(b => binary += String.fromCharCode(b));
+  return btoa(binary);
+}
+function base64ToBytes(value) {
+  return Uint8Array.from(atob(value), c => c.charCodeAt(0));
+}
+async function deriveKey(pin, salt) {
+  const material = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(pin), "PBKDF2", false, ["deriveKey"]
+  );
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations: 250000, hash: "SHA-256" },
+    material,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+async function encryptItems(items, key) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const data = new TextEncoder().encode(JSON.stringify(items));
+  const cipher = await crypto.subtle.encrypt({name:"AES-GCM",iv},key,data);
+  return {iv:bytesToBase64(iv),data:bytesToBase64(new Uint8Array(cipher))};
+}
+async function decryptItems(record, key) {
+  const plain = await crypto.subtle.decrypt(
+    {name:"AES-GCM",iv:base64ToBytes(record.iv)},
+    key,
+    base64ToBytes(record.data)
+  );
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+async function saveVault() {
+  const record = await encryptItems(unlockedItems, window.vaultKey);
+  localStorage.setItem(STORE, JSON.stringify({
+    salt: encryptedVault.salt,
+    iv: record.iv,
+    data: record.data
+  }));
+}
+async function initialize() {
+  if (!crypto.subtle) {
+    alert("Secure encryption requires HTTPS. Please open CalcVault through an HTTPS address.");
+    return;
+  }
+  encryptedVault = readStore();
+  if (!encryptedVault) $("setupModal").classList.add("show");
+}
+$("createPin").addEventListener("click", async () => {
+  const pin = $("newPin").value;
+  const confirm = $("confirmPin").value;
+  if (!/^\d{4,8}$/.test(pin)) {
+    $("setupError").textContent = "PIN must contain 4–8 digits.";
+    return;
+  }
+  if (pin !== confirm) {
+    $("setupError").textContent = "PINs do not match.";
+    return;
+  }
+  try {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    window.vaultKey = await deriveKey(pin, salt);
+    encryptedVault = {salt:bytesToBase64(salt)};
+    unlockedItems = [];
+    await saveVault();
+    $("setupModal").classList.remove("show");
+    $("newPin").value = "";
+    $("confirmPin").value = "";
+    showPanel("calculator");
+  } catch {
+    $("setupError").textContent = "Could not create the vault.";
+  }
+});
+async function unlock(pin) {
+  try {
+    const salt = base64ToBytes(encryptedVault.salt);
+    const key = await deriveKey(pin, salt);
+    const items = await decryptItems(encryptedVault, key);
+    window.vaultKey = key;
+    unlockedItems = items;
+    renderItems();
+    showPanel("vault");
+    expression = "";
+    setScreen("0");
+    $("expression").textContent = "";
+    return true;
+  } catch {
+    return false;
+  }
+}
+function lockVault() {
+  unlockedItems = null;
+  window.vaultKey = null;
+  expression = "";
+  setScreen("0");
+  $("expression").textContent = "";
+  $("addForm").classList.remove("show");
+  showPanel("calculator");
+}
+$("lockBtn").addEventListener("click", lockVault);
+
+function renderItems() {
+  const list = $("vaultList");
+  list.innerHTML = "";
+  if (!unlockedItems.length) {
+    list.innerHTML = '<div class="empty">Your vault is empty.<br>Add your first shortcut.</div>';
+    return;
+  }
+  unlockedItems.forEach((item,index) => {
+    const row = document.createElement("div");
+    row.className = "item";
+    const icon = document.createElement("div");
+    icon.className = "item-icon";
+    icon.textContent = "🌐";
+    const info = document.createElement("div");
+    info.className = "item-info";
+    const title = document.createElement("strong");
+    title.textContent = item.name;
+    const url = document.createElement("span");
+    url.textContent = item.url;
+    info.append(title,url);
+    const actions = document.createElement("div");
+    actions.className = "item-actions";
+    const open = document.createElement("button");
+    open.textContent = "↗";
+    open.title = "Open shortcut";
+    open.addEventListener("click", () => window.open(item.url,"_blank","noopener"));
+    const del = document.createElement("button");
+    del.className = "delete";
+    del.textContent = "×";
+    del.title = "Delete shortcut";
+    del.addEventListener("click", async () => {
+      unlockedItems.splice(index,1);
+      await saveVault();
+      renderItems();
+    });
+    actions.append(open,del);
+    row.append(icon,info,actions);
+    list.append(row);
+  });
+}
+$("showForm").addEventListener("click", () => $("addForm").classList.toggle("show"));
+$("cancelAdd").addEventListener("click", () => $("addForm").classList.remove("show"));
+$("saveAdd").addEventListener("click", async () => {
+  const name = $("itemName").value.trim();
+  let url = $("itemUrl").value.trim();
+  $("formError").textContent = "";
+  if (!name || !url) {
+    $("formError").textContent = "Please fill in both fields.";
+    return;
+  }
+  if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+  try {
+    const parsed = new URL(url);
+    if (!["http:","https:"].includes(parsed.protocol)) throw new Error();
+  } catch {
+    $("formError").textContent = "Please enter a valid web address.";
+    return;
+  }
+  unlockedItems.push({name,url});
+  await saveVault();
+  $("itemName").value = "";
+  $("itemUrl").value = "";
+  $("addForm").classList.remove("show");
+  renderItems();
+});
+
+function tokenize(input) {
+  const tokens = input.match(/\d+(?:\.\d*)?|\.\d+|[+\-*/%()]/g);
+  if (!tokens || tokens.join("") !== input.replace(/\s/g,"")) throw Error();
+  return tokens;
+}
+function calculate(input) {
+  const t = tokenize(input);
+  let i = 0;
+  function factor() {
+    if (t[i] === "-") { i++; return -factor(); }
+    if (t[i] === "+") { i++; return factor(); }
+    if (t[i] === "(") {
+      i++;
+      const v = sum();
+      if (t[i++] !== ")") throw Error();
+      return v;
+    }
+    const n = Number(t[i++]);
+    if (!Number.isFinite(n)) throw Error();
+    return n;
+  }
+  function product() {
+    let v = factor();
+    while (["*","/","%"].includes(t[i])) {
+      const op = t[i++], b = factor();
+      if ((op === "/" || op === "%") && b === 0) throw Error();
+      v = op === "*" ? v*b : op === "/" ? v/b : v%b;
+    }
+    return v;
+  }
+  function sum() {
+    let v = product();
+    while (t[i] === "+" || t[i] === "-") {
+      const op = t[i++], b = product();
+      v = op === "+" ? v+b : v-b;
+    }
+    return v;
+  }
+  const result = sum();
+  if (i !== t.length || !Number.isFinite(result)) throw Error();
+  return String(Number(result.toPrecision(12)));
+}
+function press(value) {
+  if (expression.length > 30) return;
+  expression += value;
+  setScreen(expression);
+}
+document.querySelectorAll(".key").forEach(button => {
+  button.addEventListener("click", async () => {
+    const action = button.dataset.action;
+    const value = button.dataset.value;
+    if (action === "clear") {
+      expression = "";
+      setScreen("0");
+      $("expression").textContent = "";
+    } else if (action === "delete") {
+      expression = expression.slice(0,-1);
+      setScreen(expression);
+    } else if (action === "equals") {
+      if (/^\d{4,8}$/.test(expression) && encryptedVault) {
+        const success = await unlock(expression);
+        if (success) return;
+        $("expression").textContent = "Incorrect PIN";
+        expression = "";
+        setScreen("0");
+        return;
+      }
+      try {
+        const result = calculate(expression);
+        $("expression").textContent = expression + " =";
+        expression = result;
+        setScreen(result);
+      } catch {
+        $("expression").textContent = "Invalid expression";
+        expression = "";
+        setScreen("0");
+      }
+    } else if (value) {
+      press(value);
+    }
+  });
+});
+initialize();
+</script>
+</body>
+</html>
